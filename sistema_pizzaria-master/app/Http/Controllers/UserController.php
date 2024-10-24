@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UserCreateRequest;
 use App\Http\Requests\UserUpdateRequest;
 use App\Models\User;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse; // Importa a classe JsonResponse para tipagem
 use Illuminate\Support\Facades\Auth;
 
 /**
@@ -20,40 +20,40 @@ use Illuminate\Support\Facades\Auth;
 class UserController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Exibe uma lista de usuários.
      */
-    public function index()
+    public function index(): JsonResponse
     {
-        $user = User::select('id', 'name', 'email', 'created_at')
-            ->paginate('10');
+        // Recupera todos os usuários com paginação
+        $users = User::select('id', 'name', 'email', 'created_at')->paginate(10);
 
-        return [
+        return response()->json([
             'status' => 200,
-            'menssagem' => 'Usuários encontrados!!',
-            'user' => $user
-        ];
+            'mensagem' => 'Usuários encontrados!',
+            'users' => $users // Corrigido para plural
+        ]);
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Exibe o usuário logado.
      */
-    public function me()
+    public function me(): JsonResponse
     {
         $user = Auth::user();
 
-        return [
+        return response()->json([
             'status' => 200,
             'message' => 'Usuário logado!',
-            "usuario" => $user
-        ];
+            'usuario' => $user
+        ]);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Armazena um novo usuário.
      */
-    public function store(UserCreateRequest $request)
+    public function store(UserCreateRequest $request): JsonResponse
     {
-        $data = $request->all();
+        $data = $request->validated(); // Garante que apenas dados válidos sejam processados
 
         $user = User::create([
             'name' => $data['name'],
@@ -61,89 +61,92 @@ class UserController extends Controller
             'password' => bcrypt($data['password']),
         ]);
 
-        return [
-            'status' => 200,
-            'menssagem' => 'Usuário cadastrado com sucesso!!',
+        return response()->json([
+            'status' => 201, // Alterado para 201 para indicar que o recurso foi criado
+            'mensagem' => 'Usuário cadastrado com sucesso!',
             'user' => $user
-        ];
+        ]);
     }
 
     /**
-     * Display the specified resource.
+     * Exibe um usuário específico.
      */
-    public function show(string $id)
+    public function show(string $id): JsonResponse
     {
         $user = User::find($id);
 
-        if(!$user){
-            return [
+        if (!$user) {
+            return response()->json([
                 'status' => 404,
                 'message' => 'Usuário não encontrado! Que triste!',
-                'user' => $user
-            ];
+                'user' => null // Corrigido para null se não encontrado
+            ]);
         }
 
-        return [
+        return response()->json([
             'status' => 200,
-            'message' => 'Usuário encontrado com sucesso!!',
+            'message' => 'Usuário encontrado com sucesso!',
             'user' => $user
-        ];
+        ]);
     }
 
-    //função editar 
+    /**
+     * Mostra o formulário de edição de um usuário.
+     */
     public function edit(string $id)
     {
         $user = User::find($id);
-        return view('usuario.editar', compact('usuario'));
+        
+        // Corrigido para passar a variável correta
+        return view('usuario.editar', compact('user'));
     }
 
-   //função atualizar
-    public function update(UserUpdateRequest $request, string $id)
+    /**
+     * Atualiza um usuário específico.
+     */
+    public function update(UserUpdateRequest $request, string $id): JsonResponse
     {
-        $data = $request->all();
+        $data = $request->validated(); // Garante que apenas dados válidos sejam processados
 
         $user = User::find($id);
 
-        if(!$user){
-            return [
+        if (!$user) {
+            return response()->json([
                 'status' => 404,
                 'message' => 'Usuário não encontrado! Que triste!',
-                'user' => $user
-            ];
+                'user' => null // Corrigido para null se não encontrado
+            ]);
         }
 
         $user->update($data);
 
-        return [
+        return response()->json([
             'status' => 200,
-            'message' => 'Usuário atualizado com sucesso!!',
+            'message' => 'Usuário atualizado com sucesso!',
             'user' => $user
-        ];
+        ]);
     }
 
-
-
     /**
-     * Remove the specified resource from storage.
+     * Remove um usuário específico.
      */
-    public function destroy(string $id)
+    public function destroy(string $id): JsonResponse
     {
         $user = User::find($id);
 
-        if(!$user){
-            return [
+        if (!$user) {
+            return response()->json([
                 'status' => 404,
                 'message' => 'Usuário não encontrado! Que triste!',
-                'user' => $user
-            ];
+                'user' => null // Corrigido para null se não encontrado
+            ]);
         }
 
-        $user->delete($id);
+        $user->delete(); // Não é necessário passar o ID aqui, já que o objeto foi encontrado
 
-        return [
+        return response()->json([
             'status' => 200,
-            'message' => 'Usuário deletado com sucesso!!'
-        ];
-
+            'message' => 'Usuário deletado com sucesso!'
+        ]);
     }
 }
